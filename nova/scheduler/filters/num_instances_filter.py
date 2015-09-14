@@ -22,8 +22,10 @@ from nova.scheduler.filters import utils
 
 LOG = logging.getLogger(__name__)
 
+# The maximum number of instances is 4, restricted by pard 
+
 max_instances_per_host_opt = cfg.IntOpt("max_instances_per_host",
-        default=50,
+        default=4,
         help="Ignore hosts that have too many instances")
 
 CONF = cfg.CONF
