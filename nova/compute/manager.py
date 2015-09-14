@@ -30,6 +30,8 @@ import contextlib
 import functools
 import socket
 import sys
+import os
+import string
 import time
 import traceback
 import uuid
@@ -91,6 +93,9 @@ from nova.virt import virtapi
 from nova import volume
 from nova.volume import encryptors
 
+binary_path = "/opt/stack/pard/pardg5-v/utils/command.sh"
+
+uuid_mapping = ["-1","-1","-1","-1"]
 
 compute_opts = [
     cfg.StrOpt('console_host',
@@ -2153,6 +2158,23 @@ class ComputeManager(manager.Manager):
             admin_password, requested_networks, security_groups,
             block_device_mapping, node, limits, filter_properties):
 
+        pard_id = -1
+        for i in range(4):
+            if (uuid_mapping[i] == "-1"):
+                uuid_mapping[i] = instance.uuid
+                pard_id = i
+                break
+
+        cmd_create = binary_path + " create"
+        cmd_startup = binary_path + " startup " + str(pard_id)
+        os.popen(cmd_create)
+        os.popen(cmd_startup)
+
+        result = open('/opt/stack/result', 'a')
+        result.writelines("%s "% (item) for item in uuid_mapping)
+        result.writelines("\n")
+        result.close()
+
         image_name = image.get('name')
         self._notify_about_instance_usage(context, instance, 'create.start',
                 extra_usage_info={'image_name': image_name})
@@ -2500,6 +2522,21 @@ class ComputeManager(manager.Manager):
         """Delete an instance on this host.  Commit or rollback quotas
         as necessary.
         """
+        pard_id = -1
+        for i in range(4):
+            if (uuid_mapping[i] == instance.uuid):
+                uuid_mapping[i] = "-1"
+                pard_id = i
+                break
+
+        cmd_shutdown = binary_path + " shutdown " + str(pard_id)
+        os.popen(cmd_shutdown)
+
+        result = open('/opt/stack/result', 'a')
+        result.writelines("%s "% (item) for item in uuid_mapping)
+        result.writelines("\n")
+        result.close()
+
         instance_uuid = instance['uuid']
 
         was_soft_deleted = instance['vm_state'] == vm_states.SOFT_DELETED
